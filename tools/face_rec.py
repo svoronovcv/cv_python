@@ -19,7 +19,7 @@ def read_images(path, sz=None):
                 except:
                     print('Unexpected error:', sys.exc_info()[0])
                     raise
-            c= c+1
+            c = c+1
     return [X,y]
 
 def face_rec():

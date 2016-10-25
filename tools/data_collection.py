@@ -16,11 +16,11 @@ def generate():
         
         f = cv2.resize(gray[y:y+h, x:x+w], (200, 200))
 
-        cv2.imwrite('./data/%s.pgm' % str(count), f)
+        cv2.imwrite('C://Users//Sergey//Documents//GitHub//cv_python//tools//data//%s.pgm' % str(count), f)
         count += 1
 
     cv2.imshow("camera", frame)
-    if cv2.waitKey(1000 / 12) & 0xff == ord("q"):
+    if cv2.waitKey(80) & 0xff == ord("q"):
       break
 
   camera.release()
