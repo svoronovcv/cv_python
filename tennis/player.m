@@ -2,11 +2,11 @@ clc
 clear all
 close all
 
-I = imread('3.png');
+I = imread('f.jpg');
 Ihsv = rgb2hsv(I);
 
 Imask = Ihsv(:,:,1)*0;
-Ipart = Ihsv(1:end, :,:);
+Ipart = Ihsv(:, :,:);
 Ipartm = mean(reshape(Ipart,[size(Ipart,1)*size(Ipart,2) 3]));
 Ipartstd = std(reshape(Ipart,[size(Ipart,1)*size(Ipart,2) 3]));
 alpha = 6;
