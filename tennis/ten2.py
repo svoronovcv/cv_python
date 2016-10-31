@@ -17,8 +17,8 @@ def find_parts(part):
 fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
 ##out = cv2.VideoWriter('output_5.avi', fourcc, 25.0, (640,720), True)
 cap = cv2.VideoCapture('/media/pc/ntfs/downloads/Waterloo tennis Rodrigo 15_06_2016.mp4')
-fgbg = cv2.createBackgroundSubtractorMOG2(history=50000, varThreshold=100)
-min_area = 100
+fgbg = cv2.createBackgroundSubtractorMOG2(history=50000, varThreshold=200)
+min_area = 80
 max_area = 4000
 min_sn_area = 10
 max_sn_area = 200
@@ -32,15 +32,15 @@ mask1 = cv2.imread('ff.jpg')
 (yc, xc) = (217, 307)
 ksize = 20
 kernel = np.ones((ksize,ksize),np.uint16)
-counter = 60
+counter = 0
 neg_count = 0
-counter_thd = 50
+counter_thd = 20
 
 for i in range(17250):
     ret, frame = cap.read()
-    frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
+    
+frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
                        interpolation = cv2.INTER_CUBIC)
-
 while(1):
     ret, frame = cap.read()
     if not(ret):
@@ -69,12 +69,12 @@ while(1):
         np.abs(y-yc+h)>40 or \
         (((y+h)<yc) and (y-yc+h)<-50) or \
         w > 150 or \
-        h > 200 or \
+        h > 150 or \
         w < 30 or \
         h < 70:
             continue
         sneakers = find_parts(morpho[y+h:y+np.floor(2*h), x-np.floor(0.5*w):x+np.floor(1.5*w)])
-        hands = find_parts(morpho[y-np.floor(0.3*h):y, x:x+w])
+        hands = find_parts(morpho[y-np.floor(0.2*h):y, x:x+w])
         if sneakers != None:
             for cn in sneakers:
                 if (cv2.contourArea(cn) < min_sn_area) or (cv2.contourArea(cn) > max_sn_area):
@@ -85,17 +85,18 @@ while(1):
                     x = np.uint16(xS)
                 if xS+wS > x+w:
                     w = np.uint16(xS+wS-x)
-                if yS+hS > y+h:
+                if yS+hS > y+h and yS+hS-y <150:
                     h = np.uint16(yS+hS-y)
                 cv2.rectangle(frame, (np.uint16(xS), np.uint16(yS)), (np.uint16(xS + wS), np.uint16(yS + hS)), (255, 0, 0), 2)
 
         if hands != None:
             for hn in hands:
-                if (cv2.contourArea(hn) > 500):
+                print(cv2.contourArea(hn))
+                if (cv2.contourArea(hn) > 500 and cv2.contourArea(hn) < 150):
                     continue
                 (xH, yH, wH, hH) = cv2.boundingRect(hn)
                 (xH, yH, wH, hH) = (xH, yH+y-np.floor(0.3*h), wH, hH)
-                if yH < y:
+                if yH < y and h+y-yH < 150:
                     h = np.uint16(h+y-yH)
                     y = np.uint16(yH)  
                 cv2.rectangle(frame, (np.uint16(x), np.uint16(yH)), (np.uint16(x + w), np.uint16(yH + hH)), (0, 0, 255), 2)
@@ -122,7 +123,7 @@ while(1):
                np.std(B[np.uint16(h*0.2):]) < 0.2 and \
                h/w > 2 and \
                np.mean(B[np.uint16(h*0.4):np.uint16(h*0.8)]) / np.mean(B[:np.uint16(h*0.2)]) > 2:
-                counter = 0
+                counter = -20
                 plt.figure()
                 plt.plot(A)
                 plt.subplot(211)
