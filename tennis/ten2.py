@@ -15,7 +15,7 @@ def find_parts(part):
 		cv2.CHAIN_APPROX_SIMPLE)
     return cnts
 fourcc = cv2.VideoWriter_fourcc('M','J','P','G')
-##out = cv2.VideoWriter('output_5.avi', fourcc, 25.0, (640,720), True)
+##out = cv2.VideoWriter('output_5.avi', fourcc, 30.0, (640,720), True)
 cap = cv2.VideoCapture('/media/pc/ntfs/downloads/Waterloo tennis Rodrigo 15_06_2016.mp4')
 fgbg = cv2.createBackgroundSubtractorMOG2(history=50000, varThreshold=200)
 min_area = 80
