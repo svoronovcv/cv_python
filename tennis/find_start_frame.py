@@ -11,15 +11,15 @@ def find_parts(part):
 		cv2.CHAIN_APPROX_SIMPLE)
     return cnts
 
-def find(cap,fgbg,D,i):
+def find(cap,fgbg,D):
     min_area = 80
     max_area = 4000
     min_sn_area = 10
     max_sn_area = 200
     mask = np.zeros((360,640,3), dtype=np.uint16)
     mask[100:, :,:] = 1
-    (yc, xc) = (217, 307)
-    ksize = 20
+    (yc, xc) = (230, 345)
+    ksize = 10
     kernel = np.ones((ksize,ksize),np.uint16)
     counter = 0
     neg_count = 0
@@ -27,17 +27,16 @@ def find(cap,fgbg,D,i):
         
     while(1):
         ret, frame = cap.read()
-        i+=1
         if not(ret):
-            return ret, frame, D, i
+            return ret, frame, D
         frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
                            interpolation = cv2.INTER_CUBIC)
-        frame = frame*(mask1 > 180)
-        cv2.imwrite('f.jpg', frame)
+        frame = frame #*(mask1 > 180)
+##        cv2.imwrite('f.jpg', frame)
         fgmask = fgbg.apply(frame)
-        fgmask = fgmask * (fgmask >200) *(mask1[:,:,0] > 200)
+        fgmask = fgmask * (fgmask >200) #*(mask1[:,:,0] > 200)
         morpho = cv2.morphologyEx(fgmask, cv2.MORPH_CLOSE, kernel)
-        cv2.imshow('morpho',morpho)
+##        cv2.imshow('morpho',morpho)
         (_,cnts,_) = cv2.findContours(morpho, cv2.RETR_CCOMP,
                     cv2.CHAIN_APPROX_SIMPLE)
         find_cnt = False
@@ -55,33 +54,32 @@ def find(cap,fgbg,D,i):
             w < 30 or \
             h < 70:
                 continue
-            sneakers = find_parts(morpho[y+h:y+np.floor(2*h), x-np.floor(0.5*w):x+np.floor(1.5*w)])
-            hands = find_parts(morpho[y-np.floor(0.2*h):y, x:x+w])
-            if sneakers != None:
-                for cn in sneakers:
-                    if (cv2.contourArea(cn) < min_sn_area) or (cv2.contourArea(cn) > max_sn_area):
-                        continue
-                    (xS, yS, wS, hS) = cv2.boundingRect(cn)
-                    (xS, yS, wS, hS) = (xS+x-np.floor(0.2*w), yS+y+h, wS, hS)
-                    if xS < x:
-                        x = np.uint16(xS)
-                    if xS+wS > x+w:
-                        w = np.uint16(xS+wS-x)
-                    if yS+hS > y+h and yS+hS-y <150:
-                        h = np.uint16(yS+hS-y)
-                    cv2.rectangle(frame, (np.uint16(xS), np.uint16(yS)), (np.uint16(xS + wS), np.uint16(yS + hS)), (255, 0, 0), 2)
-
-            if hands != None:
-                for hn in hands:
-                    print(cv2.contourArea(hn))
-                    if (cv2.contourArea(hn) > 500 and cv2.contourArea(hn) < 150):
-                        continue
-                    (xH, yH, wH, hH) = cv2.boundingRect(hn)
-                    (xH, yH, wH, hH) = (xH, yH+y-np.floor(0.3*h), wH, hH)
-                    if yH < y and h+y-yH < 150:
-                        h = np.uint16(h+y-yH)
-                        y = np.uint16(yH)  
-                    cv2.rectangle(frame, (np.uint16(x), np.uint16(yH)), (np.uint16(x + w), np.uint16(yH + hH)), (0, 0, 255), 2)
+##            sneakers = find_parts(morpho[y+h:y+np.floor(2*h), x-np.floor(0.5*w):x+np.floor(1.5*w)])
+##            hands = find_parts(morpho[y-np.floor(0.2*h):y, x:x+w])
+##            if sneakers != None:
+##                for cn in sneakers:
+##                    if (cv2.contourArea(cn) < min_sn_area) or (cv2.contourArea(cn) > max_sn_area):
+##                        continue
+##                    (xS, yS, wS, hS) = cv2.boundingRect(cn)
+##                    (xS, yS, wS, hS) = (xS+x-np.floor(0.2*w), yS+y+h, wS, hS)
+##                    if xS < x:
+##                        x = np.uint16(xS)
+##                    if xS+wS > x+w:
+##                        w = np.uint16(xS+wS-x)
+##                    if yS+hS > y+h and yS+hS-y <150:
+##                        h = np.uint16(yS+hS-y)
+##                    cv2.rectangle(frame, (np.uint16(xS), np.uint16(yS)), (np.uint16(xS + wS), np.uint16(yS + hS)), (255, 0, 0), 2)
+##
+##            if hands != None:
+##                for hn in hands:
+##                    if (cv2.contourArea(hn) > 500 and cv2.contourArea(hn) < 150):
+##                        continue
+##                    (xH, yH, wH, hH) = cv2.boundingRect(hn)
+##                    (xH, yH, wH, hH) = (xH, yH+y-np.floor(0.3*h), wH, hH)
+##                    if yH < y and h+y-yH < 150:
+##                        h = np.uint16(h+y-yH)
+##                        y = np.uint16(yH)  
+##                    cv2.rectangle(frame, (np.uint16(x), np.uint16(yH)), (np.uint16(x + w), np.uint16(yH + hH)), (0, 0, 255), 2)
                         
             cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
             find_cnt = True
@@ -93,8 +91,8 @@ def find(cap,fgbg,D,i):
                    np.std(B[np.uint16(h*0.2):]) < 0.2 and \
                    h/w > 2 and \
                    np.mean(B[np.uint16(h*0.4):np.uint16(h*0.8)]) / np.mean(B[:np.uint16(h*0.2)]) > 2:
-                    D[i] = 1
-                    return ret, frame, D, i
+                    D.append(1)
+                    return ret, frame, D
         if find_cnt:
             counter += 1
             neg_count = 0
@@ -102,4 +100,4 @@ def find(cap,fgbg,D,i):
             neg_count += 1
             if neg_count > 20:
                 counter = 0
-        D[i] = 0
+        D.append(0)
