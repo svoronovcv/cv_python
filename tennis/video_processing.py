@@ -17,7 +17,7 @@ cap = cv2.VideoCapture(video)
 fgbg = cv2.createBackgroundSubtractorMOG2(history=50000, varThreshold=200)
 D = [] # Array of flags
 text_to_put = {
-    0: 'IDL',
+    0: 'IDLE',
     1: 'SERVICE',
     2: 'GAME',
     3: 'END',
