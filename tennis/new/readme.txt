@@ -1,0 +1,1 @@
+Results of R&D of Sergey Voronov

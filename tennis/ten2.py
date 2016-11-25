@@ -94,7 +94,7 @@ def find_start(fgmask,x,y,w,h,count,pos, posR):
             h/w > 2 and \
             np.mean(B[np.uint16(h*0.4):np.uint16(h*0.8)]) \
             / np.mean(B[:np.uint16(h*0.2)]) > 2:
-            count = -20
+            count = -25
             f.write(str(fr_number) + '\n')
 ##            plt.figure()
 ##            plt.plot(A)
