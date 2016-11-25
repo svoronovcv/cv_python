@@ -103,8 +103,14 @@ while(1):
                                              canny_thr)  # find an end frame
 ##    print(counter)
     if start_flag > 0:
-       D.append(1)
-       curr = 1
+        if curr == 2:
+            for e in range(len(D)-fps:len(D)-1):
+                if D[e] != 2:
+                    break
+                else:
+                    D[e] = 0
+        D.append(1)
+        curr = 1
     else:
         if curr == 1:
            D.append(2)
