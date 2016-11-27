@@ -1,9 +1,27 @@
 import cv2
 import numpy as np
+from argparse import ArgumentParser
+from sys import argv
 from timeit import default_timer as timer
-from matplotlib import pyplot as plt
+##from matplotlib import pyplot as plt
 import find_start_frame_v2 as firstf
 from ball_tracking_v2 import fnd_endframe as endf
+
+cv2.ocl.setUseOpenCL(False)
+
+parser = ArgumentParser()
+parser.add_argument('-n', required = True, dest='fname',
+                  action='store', help="Videofile name")
+parser.add_argument('-d', type=int, dest='height',
+                  action='store', default=0,
+                  help="Distance to the court: 0-low, 1-middle, 2-high")
+parser.add_argument('-i', type=int, dest='outdoor',
+                  action='store', default=0,
+                  help="1-outdoor videos, 0-indoor")
+parser.add_argument('-s', type=int, dest='start',
+                  action='store', default=0,
+                  help="Set starting time in seconds")
+args = parser.parse_args()
 
 start = timer()
 D = []
@@ -11,24 +29,24 @@ D = []
 # Init video in and out video
 ##video = "D:\Waterloo tennis Rodrigo 15_06_2016.mp4"
 ##fourcc = cv2.VideoWriter_fourcc('F','M','P','4')
-video = "/media/pc/ntfs/downloads/Guillaume vs Thomas test deux cameras 2 en haut.mp4"
+video = args.fname #"D:\Waterloo tennis Rodrigo 15_06_2016.mp4"
 cap = cv2.VideoCapture(video)
 Width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 Height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fps = int(cap.get(cv2.CAP_PROP_FPS ))
 fourcc = cv2.VideoWriter_fourcc('F','M','P','4')
-out = cv2.VideoWriter("new.avi", fourcc, np.double(fps), (Width,Height), True)
+out = cv2.VideoWriter("processed.avi", fourcc, np.double(fps), (Width,Height), True)
 print(out.isOpened()) # Check if file is sucessfully created
-##for t in range(17250):
-##    ret, frame = cap.read()
+for t in range(args.start*fps):
+    ret, frame = cap.read()
 # Create foreground extracter
 fgbg = cv2.createBackgroundSubtractorMOG2(history=50000, varThreshold=200)
-text_to_put = {
-    0: 'IDL',
-    1: 'SERVICE',
-    2: 'GAME',
-    3: 'END',
-} # Dictionary for flags
+##text_to_put = {
+##    0: 'IDL',
+##    1: 'SERVICE',
+##    2: 'GAME',
+##    3: 'END',
+##} # Dictionary for flags
 
 ## Start frame flag search parameters-------------------------------
 min_area = 80
@@ -38,8 +56,9 @@ max_sn_area = 200
 mask = np.zeros((int(Height/2), int(Width/2),3), dtype=np.uint16)
 mask[100:, :,:] = 1
 mask1 = np.zeros((int(Height/2), int(Width/2),3), dtype=np.uint16)+255 #cv2.imread('ff.jpg')
-(yc, xc) = (Height/4 + 20, Width/4)
-ksize = 15
+(yc, xc) = (Height/4 + 100 -40*args.height, Width/4)
+##(yc, xc) = (215, 307)
+ksize = 15 + 5*args.outdoor
 kernel = np.ones((ksize,ksize),np.uint16)
 counter = 0
 neg_count = 0
@@ -63,7 +82,10 @@ end_counter = 0
 
 ## Do the first iteration in order to obtain init_frame for end_frame search
 ret, frame = cap.read()
-fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(frame, fgbg, \
+##loc_frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
+##                       interpolation = cv2.INTER_CUBIC)
+##cv2.imwrite('dfg.jpg', loc_frame)
+fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg, \
                                                                   min_area, \
                                                                   max_area, \
                                                                   min_sn_area,\
@@ -84,7 +106,7 @@ while(1):
     ret, frame = cap.read()
     if not(ret): # stop if it the end of the video
         break
-    fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(frame, fgbg,\
+    fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg,\
                                                                       min_area, \
                                                                       max_area, \
                                                                       min_sn_area,\
@@ -104,7 +126,7 @@ while(1):
 ##    print(counter)
     if start_flag > 0:
         if curr == 2:
-            for e in range(len(D)-fps:len(D)-1):
+            for e in range((len(D)-fps),(len(D)-1)):
                 if D[e] != 2:
                     break
                 else:
@@ -130,8 +152,8 @@ while(1):
 # Reinit the in video in order to play it again and edit flags
 cap.release()
 cap = cv2.VideoCapture(video)
-##for t in range(17250):
-##    ret, frame = cap.read()
+for t in range(args.start*fps):
+    ret, frame = cap.read()
 # Edit the flags
 F = np.copy(D)
 for i in range(2*fps, len(D)-fps-1): # if it is a start, go back for 2 sec and 10 frames forward
@@ -161,6 +183,8 @@ for i in range(len(F)-1):
         out.write(frame)
 
 end = timer()
-print(end - start) 
+print("Total time: ", end - start) 
 out.release()
+out = None
 cap.release()
+cap = None

@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-import matplotlib.pyplot as plt
+##import matplotlib.pyplot as plt
 
 def projX(frame,x,y,w,h):
     return np.sum(frame[y:y+h,x:x+w],0)/255/h
@@ -22,7 +22,7 @@ def avg_speed(posit):
         (x1,y1) = (x,y)
     return np.median(speed)
 
-def find_player(morpho, cnts, frame, min_area, max_area, min_sn_area, max_sn_area, xc, yc):
+def find_player(outflag, morpho, cnts, frame, min_area, max_area, min_sn_area, max_sn_area, xc, yc):
     find_pl = False
     (x,y,w,h) = (0,0,0,0)
     (xA,yA,wA,hA) = (0,0,0,0)
@@ -33,7 +33,7 @@ def find_player(morpho, cnts, frame, min_area, max_area, min_sn_area, max_sn_are
         if (y+h) < 150 or \
         (x-xc)>100 or \
         ((x<xc) and (x-xc+w)<-100) or \
-        np.abs(y-yc+h)>40 or \
+        np.abs(y-yc+h)>60 or \
         (((y+h)<yc) and (y-yc+h)<-20) or \
         w > 100 or \
         h > 150 or \
@@ -48,36 +48,37 @@ def find_player(morpho, cnts, frame, min_area, max_area, min_sn_area, max_sn_are
         cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
 ##        cv2.imshow("pla", frame)
 ##        cv2.waitKey(30)
-##        sneakers = find_parts(morpho[y+h:y+np.floor(2*h), \
-##                                     x-np.floor(0.5*w):x+np.floor(1.5*w)])
-##        if sneakers != None:
-##            for cn in sneakers:
-##                if (cv2.contourArea(cn) < min_sn_area) or \
-##                (cv2.contourArea(cn) > max_sn_area):
-##                    continue
-##                (xS, yS, wS, hS) = cv2.boundingRect(cn)
-##                (xS, yS, wS, hS) = (xS+x-np.floor(0.5*w), yS+y+h, wS, hS)
-##                if xS < x:
-##                    x = np.uint16(xS)
-##                if xS+wS > x+w:
-##                    w = np.uint16(xS+wS-x)
-##                if yS+hS > y+h and yS+hS-y <150:
-##                    h = np.uint16(yS+hS-y)
-##                cv2.rectangle(frame, (np.uint16(xS), np.uint16(yS)), \
-##                              (np.uint16(xS + wS), np.uint16(yS + hS)), (255, 0, 0), 2)
-##
-##        hands = find_parts(morpho[y-np.floor(0.2*h):y, x:x+w])
-##        if hands != None:
-##            for hn in hands:
-##                if (cv2.contourArea(hn) > 500 and cv2.contourArea(hn) < 150):
-##                    continue
-##                (xH, yH, wH, hH) = cv2.boundingRect(hn)
-##                (xH, yH, wH, hH) = (xH, yH+y-np.floor(0.2*h), wH, hH)
-##                if yH < y and h+y-yH < 150:
-##                    h = np.uint16(h+y-yH)
-##                    y = np.uint16(yH)  
-##                cv2.rectangle(frame, (np.uint16(x), np.uint16(yH)), \
-##                              (np.uint16(x + w), np.uint16(yH + hH)), (0, 0, 255), 2)   
+        if (outflag > 0):
+            sneakers = find_parts(morpho[y+h:y+np.floor(2*h), \
+                                         x-np.floor(0.5*w):x+np.floor(1.5*w)])
+            if sneakers != None:
+                for cn in sneakers:
+                    if (cv2.contourArea(cn) < min_sn_area) or \
+                    (cv2.contourArea(cn) > max_sn_area):
+                        continue
+                    (xS, yS, wS, hS) = cv2.boundingRect(cn)
+                    (xS, yS, wS, hS) = (xS+x-np.floor(0.5*w), yS+y+h, wS, hS)
+                    if xS < x:
+                        x = np.uint16(xS)
+                    if xS+wS > x+w:
+                        w = np.uint16(xS+wS-x)
+                    if yS+hS > y+h and yS+hS-y <150:
+                        h = np.uint16(yS+hS-y)
+                    cv2.rectangle(frame, (np.uint16(xS), np.uint16(yS)), \
+                                  (np.uint16(xS + wS), np.uint16(yS + hS)), (255, 0, 0), 2)
+
+            hands = find_parts(morpho[y-np.floor(0.2*h):y, x:x+w])
+            if hands != None:
+                for hn in hands:
+                    if (cv2.contourArea(hn) > 500 and cv2.contourArea(hn) < 150):
+                        continue
+                    (xH, yH, wH, hH) = cv2.boundingRect(hn)
+                    (xH, yH, wH, hH) = (xH, yH+y-np.floor(0.2*h), wH, hH)
+                    if yH < y and h+y-yH < 150:
+                        h = np.uint16(h+y-yH)
+                        y = np.uint16(yH)  
+                    cv2.rectangle(frame, (np.uint16(x), np.uint16(yH)), \
+                                  (np.uint16(x + w), np.uint16(yH + hH)), (0, 0, 255), 2)   
     return find_pl, x, y, w, h
 
 def find_start(fgmask,x,y,w,h,count,pos, posR):
@@ -102,7 +103,7 @@ def find_start(fgmask,x,y,w,h,count,pos, posR):
 ##            plt.show()
     return count, found
     
-def find(frame, fgbg,  min_area, max_area, min_sn_area, max_sn_area, \
+def find(outflag, frame, fgbg,  min_area, max_area, min_sn_area, max_sn_area, \
              mask, mask1, yc, xc, kernel, counter, neg_count, \
              counter_thd, position, positionR):
     flag = 0
@@ -120,7 +121,7 @@ def find(frame, fgbg,  min_area, max_area, min_sn_area, max_sn_area, \
 ##    cv2.imshow('morpho',morpho)
     (_,cnts,_) = cv2.findContours(morpho, cv2.RETR_CCOMP,
 		cv2.CHAIN_APPROX_SIMPLE)
-    find_cnt, x ,y, w, h = find_player(morpho, cnts,loc_frame, min_area, max_area, min_sn_area, max_sn_area, xc, yc)
+    find_cnt, x ,y, w, h = find_player(outflag, morpho, cnts,loc_frame, min_area, max_area, min_sn_area, max_sn_area, xc, yc)
     if find_cnt:
         if counter > counter_thd:
             counter, flag = find_start(fgmask,x,y,w,h,counter, position, positionR)
