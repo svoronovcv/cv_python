@@ -1,0 +1,24 @@
+clc
+
+I = imread('n.jpg');
+% Ihsv = rgb2hsv(I);
+Iv = I(:,:,3);
+Im1 = zeros(size(Iv));
+Im1(180:end,260:380) = 1;
+Ipart = Iv.*Im1;
+Ibw = Ipart > 0.7;
+maxs=0;
+for i=260:380
+    for j = 180:350
+        Ip = Ibw(j-5:j+4,i-5:i+4);
+        s = sum(sum(Ip == mask));
+        if(s >maxs)
+            maxs=s;
+            mi=i;
+            mj=j;
+        end
+    end
+end
+imshow(Ibw)
+hold on
+plot(mi,mj,'b*','MarkerSize',10)

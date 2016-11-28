@@ -6,15 +6,16 @@ from timeit import default_timer as timer
 ##from matplotlib import pyplot as plt
 import find_start_frame_v2 as firstf
 from ball_tracking_v2 import fnd_endframe as endf
+from court_det import find_serv_point as f_sp
 
 cv2.ocl.setUseOpenCL(False)
 
 parser = ArgumentParser()
 parser.add_argument('-n', required = True, dest='fname',
                   action='store', help="Videofile name")
-parser.add_argument('-d', type=int, dest='height',
-                  action='store', default=0,
-                  help="Distance to the court: 0-low, 1-middle, 2-high")
+##parser.add_argument('-d', type=int, dest='height',
+##                  action='store', default=0,
+##                  help="Distance to the court: 0-low, 1-middle, 2-high")
 parser.add_argument('-i', type=int, dest='outdoor',
                   action='store', default=0,
                   help="1-outdoor videos, 0-indoor")
@@ -56,7 +57,7 @@ max_sn_area = 200
 mask = np.zeros((int(Height/2), int(Width/2),3), dtype=np.uint16)
 mask[100:, :,:] = 1
 mask1 = np.zeros((int(Height/2), int(Width/2),3), dtype=np.uint16)+255 #cv2.imread('ff.jpg')
-(yc, xc) = (Height/4 + 100 -40*args.height, Width/4)
+##(yc, xc) = (Height/4 + 100 -40*args.height, Width/4)
 ##(yc, xc) = (215, 307)
 ksize = 15 + 5*args.outdoor
 kernel = np.ones((ksize,ksize),np.uint16)
@@ -82,108 +83,112 @@ end_counter = 0
 
 ## Do the first iteration in order to obtain init_frame for end_frame search
 ret, frame = cap.read()
-##loc_frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
-##                       interpolation = cv2.INTER_CUBIC)
-##cv2.imwrite('dfg.jpg', loc_frame)
-fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg, \
-                                                                  min_area, \
-                                                                  max_area, \
-                                                                  min_sn_area,\
-                                                                  max_sn_area, \
-                                                                  mask, mask1, \
-                                                                  yc, xc, \
-                                                                  kernel, \
-                                                                  counter, \
-                                                                  neg_count, \
-                                                                  counter_thd, \
-                                                                  position, \
-                                                                  positionR) # find a service frame
-init_frame = frame
-D.append(0)
-curr = 0
-# Process the video
-while(1):
-    ret, frame = cap.read()
-    if not(ret): # stop if it the end of the video
-        break
-    fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg,\
-                                                                      min_area, \
-                                                                      max_area, \
-                                                                      min_sn_area,\
-                                                                      max_sn_area, \
-                                                                      mask, mask1, \
-                                                                      yc, xc, \
-                                                                      kernel, \
-                                                                      counter, \
-                                                                      neg_count, \
-                                                                      counter_thd, \
-                                                                      position, \
-                                                                      positionR) # find a service frame
-    end_flag, end_counter, init_frame = endf(end_counter, init_frame, frame, fps, border,\
-                                             min_ball_area, max_ball_area, min_dif_border, \
-                                             max_dif_border, greenLower, greenUpper, \
-                                             canny_thr)  # find an end frame
-##    print(counter)
-    if start_flag > 0:
-        if curr == 2:
-            for e in range((len(D)-fps),(len(D)-1)):
-                if D[e] != 2:
-                    break
-                else:
-                    D[e] = 0
-        D.append(1)
-        curr = 1
-    else:
-        if curr == 1:
-           D.append(2)
-           curr = 2
-           end_counter = 0
-        else:
-            if curr ==2 and end_flag > 0:
-                D.append(3)
-                curr = 3
-            elif curr == 2:
-                D.append(2)
-                curr = 2
-            else:
-                D.append(0)
-                curr = 0
-        
-# Reinit the in video in order to play it again and edit flags
-cap.release()
-cap = cv2.VideoCapture(video)
-for t in range(args.start*fps):
-    ret, frame = cap.read()
-# Edit the flags
-F = np.copy(D)
-for i in range(2*fps, len(D)-fps-1): # if it is a start, go back for 2 sec and 10 frames forward
-    if D[i] == 1:
-        if i < 2*fps:
-            for j in range(i+np.uint8(fps/3)):
-                F[j] = 1
-        else:
-            for j in range(i-2*fps,i+np.uint8(fps/3)): # if it is a start 
-               if D[j] == 0:
-                   F[j] = 1                # and less then a sec left - assign start from 0, not 25 frames back
-    elif D[i] == 3: # if it is an end frame - let it stay for a sec
-        for j in range(i, i+fps):
-            if D[j] == 0:
-                F[j] = 3
-
-# Put texts on frames         
-for i in range(len(F)-1):
-    ret, frame = cap.read()
-    if not(ret):
-        break
-    if F[i] > 0:
-##    text = text_to_put[F[i]]
-##    cv2.rectangle(frame, (0,0), (180, 60), (0,0,0), -1)
-##    cv2.putText(frame, text, (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
-##		1.0, (255, 255, 255), 4)
-        out.write(frame)
-
-end = timer()
-print("Total time: ", end - start) 
+loc_frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
+                       interpolation = cv2.INTER_CUBIC)
+(xc,yc) = f_sp(loc_frame)
+##cv2.imwrite('n2.jpg',loc_frame)
+print(xc,yc)
+##
+####cv2.imwrite('dfg.jpg', loc_frame)
+##fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg, \
+##                                                                  min_area, \
+##                                                                  max_area, \
+##                                                                  min_sn_area,\
+##                                                                  max_sn_area, \
+##                                                                  mask, mask1, \
+##                                                                  yc, xc, \
+##                                                                  kernel, \
+##                                                                  counter, \
+##                                                                  neg_count, \
+##                                                                  counter_thd, \
+##                                                                  position, \
+##                                                                  positionR) # find a service frame
+##init_frame = frame
+##D.append(0)
+##curr = 0
+### Process the video
+##while(1):
+##    ret, frame = cap.read()
+##    if not(ret): # stop if it the end of the video
+##        break
+##    fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg,\
+##                                                                      min_area, \
+##                                                                      max_area, \
+##                                                                      min_sn_area,\
+##                                                                      max_sn_area, \
+##                                                                      mask, mask1, \
+##                                                                      yc, xc, \
+##                                                                      kernel, \
+##                                                                      counter, \
+##                                                                      neg_count, \
+##                                                                      counter_thd, \
+##                                                                      position, \
+##                                                                      positionR) # find a service frame
+##    end_flag, end_counter, init_frame = endf(end_counter, init_frame, frame, fps, border,\
+##                                             min_ball_area, max_ball_area, min_dif_border, \
+##                                             max_dif_border, greenLower, greenUpper, \
+##                                             canny_thr)  # find an end frame
+####    print(counter)
+##    if start_flag > 0:
+##        if curr == 2:
+##            for e in range((len(D)-fps),(len(D)-1)):
+##                if D[e] != 2:
+##                    break
+##                else:
+##                    D[e] = 0
+##        D.append(1)
+##        curr = 1
+##    else:
+##        if curr == 1:
+##           D.append(2)
+##           curr = 2
+##           end_counter = 0
+##        else:
+##            if curr ==2 and end_flag > 0:
+##                D.append(3)
+##                curr = 3
+##            elif curr == 2:
+##                D.append(2)
+##                curr = 2
+##            else:
+##                D.append(0)
+##                curr = 0
+##        
+### Reinit the in video in order to play it again and edit flags
+##cap.release()
+##cap = cv2.VideoCapture(video)
+##for t in range(args.start*fps):
+##    ret, frame = cap.read()
+### Edit the flags
+##F = np.copy(D)
+##for i in range(2*fps, len(D)-fps-1): # if it is a start, go back for 2 sec and 10 frames forward
+##    if D[i] == 1:
+##        if i < 2*fps:
+##            for j in range(i+np.uint8(fps/3)):
+##                F[j] = 1
+##        else:
+##            for j in range(i-2*fps,i+np.uint8(fps/3)): # if it is a start 
+##               if D[j] == 0:
+##                   F[j] = 1                # and less then a sec left - assign start from 0, not 25 frames back
+##    elif D[i] == 3: # if it is an end frame - let it stay for a sec
+##        for j in range(i, i+fps):
+##            if D[j] == 0:
+##                F[j] = 3
+##
+### Put texts on frames         
+##for i in range(len(F)-1):
+##    ret, frame = cap.read()
+##    if not(ret):
+##        break
+##    if F[i] > 0:
+####    text = text_to_put[F[i]]
+####    cv2.rectangle(frame, (0,0), (180, 60), (0,0,0), -1)
+####    cv2.putText(frame, text, (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
+####		1.0, (255, 255, 255), 4)
+##        out.write(frame)
+##
+##end = timer()
+##print("Total time: ", end - start) 
 out.release()
 out = None
 cap.release()
