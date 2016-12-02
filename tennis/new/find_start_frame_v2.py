@@ -34,7 +34,7 @@ def find_player(outflag, morpho, cnts, frame, min_area, max_area, min_sn_area, m
         (x-xc)>100 or \
         ((x<xc) and (x-xc+w)<-100) or \
         np.abs(y-yc+h)>60 or \
-        (((y+h)<yc) and (y-yc+h)<-20) or \
+        (((y+h)<yc) and (y-yc+h)<-10) or \
         w > 100 or \
         h > 150 or \
         w < 30 or \

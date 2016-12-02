@@ -42,12 +42,13 @@ for t in range(args.start*fps):
     ret, frame = cap.read()
 # Create foreground extracter
 fgbg = cv2.createBackgroundSubtractorMOG2(history=50000, varThreshold=200)
-##text_to_put = {
-##    0: 'IDL',
-##    1: 'SERVICE',
-##    2: 'GAME',
-##    3: 'END',
-##} # Dictionary for flags
+text_to_put = {
+    0: 'IDL',
+    1: 'SERVICE DETECTED',
+    2: 'GAME',
+    3: 'LOST BALL',
+    4: 'CONTINUOUS BALL'
+} # Dictionary for flags
 
 ## Start frame flag search parameters-------------------------------
 min_area = 80
@@ -79,6 +80,9 @@ greenUpper = (52, 150, 255)
 canny_thr = 100
 border = max_sec*fps
 end_counter = 0
+found_max_sec = 2
+thresh_ball_fond = found_max_sec*fps
+ball_cont_found = 0
 ##------------------------------------------------------------------
 
 ## Do the first iteration in order to obtain init_frame for end_frame search
@@ -106,6 +110,7 @@ fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.out
 init_frame = frame
 D.append(0)
 curr = 0
+f =0
 # Process the video
 while(1):
     ret, frame = cap.read()
@@ -128,6 +133,14 @@ while(1):
                                              min_ball_area, max_ball_area, min_dif_border, \
                                              max_dif_border, greenLower, greenUpper, \
                                              canny_thr)  # find an end frame
+    if end_counter == 0:
+        f +=1
+        if f > thresh_ball_fond:
+            ball_cont_found = 1
+        else:
+            ball_cont_found = 0
+    else:
+        f = 0
 ##    print(counter)
     if start_flag > 0:
         if curr == 2:
@@ -144,9 +157,12 @@ while(1):
            curr = 2
            end_counter = 0
         else:
-            if curr ==2 and end_flag > 0:
+            if curr == 2 and end_flag > 0:
                 D.append(3)
                 curr = 3
+            elif curr == 2 and ball_cont_found > 0:
+                D.append(4)
+                curr = 4
             elif curr == 2:
                 D.append(2)
                 curr = 2
@@ -171,9 +187,13 @@ for i in range(2*fps, len(D)-fps-1): # if it is a start, go back for 2 sec and 1
                if D[j] == 0:
                    F[j] = 1                # and less then a sec left - assign start from 0, not 25 frames back
     elif D[i] == 3: # if it is an end frame - let it stay for a sec
-        for j in range(i, i+fps):
+        for j in range(i, i+2*fps):
             if D[j] == 0:
                 F[j] = 3
+    elif D[i] == 4: # if it is an end frame - let it stay for a sec
+        for j in range(i, i+2*fps):
+            if D[j] == 0:
+                F[j] = 4
 
 # Put texts on frames         
 for i in range(len(F)-1):
@@ -181,10 +201,11 @@ for i in range(len(F)-1):
     if not(ret):
         break
     if F[i] > 0:
-##    text = text_to_put[F[i]]
-##    cv2.rectangle(frame, (0,0), (180, 60), (0,0,0), -1)
-##    cv2.putText(frame, text, (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
-##		1.0, (255, 255, 255), 4)
+        text = text_to_put[F[i]]
+        if F[i] != 2:     
+            cv2.rectangle(frame, (0,0), (300, 60), (0,0,0), -1)
+            cv2.putText(frame, text, (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                        1.0, (255, 255, 255), 4)
         out.write(frame)
 
 end = timer()
