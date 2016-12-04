@@ -203,7 +203,7 @@ for i in range(len(F)-1):
     if F[i] > 0:
         text = text_to_put[F[i]]
         if F[i] != 2:     
-            cv2.rectangle(frame, (0,0), (300, 60), (0,0,0), -1)
+            cv2.rectangle(frame, (0,0), (400, 60), (0,0,0), -1)
             cv2.putText(frame, text, (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
                         1.0, (255, 255, 255), 4)
         out.write(frame)
