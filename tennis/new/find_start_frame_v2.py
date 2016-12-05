@@ -135,4 +135,4 @@ def find(outflag, frame, fgbg,  min_area, max_area, min_sn_area, max_sn_area, \
             counter = 0
             position = []
             positionR = []
-    return fgbg, counter, neg_count, position, positionR, flag
+    return morpho, fgbg, counter, neg_count, position, positionR, flag

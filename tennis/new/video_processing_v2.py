@@ -7,6 +7,7 @@ from timeit import default_timer as timer
 import find_start_frame_v2 as firstf
 from ball_tracking_v2 import fnd_endframe as endf
 from court_det import find_serv_point as f_sp
+from service_find import find_service_pos as f_s_p
 
 cv2.ocl.setUseOpenCL(False)
 
@@ -47,7 +48,8 @@ text_to_put = {
     1: 'SERVICE DETECTED',
     2: 'GAME',
     3: 'LOST BALL',
-    4: 'CONTINUOUS BALL'
+    4: 'CONTINUOUS BALL',
+    5: 'SERVICE POSITION'
 } # Dictionary for flags
 
 ## Start frame flag search parameters-------------------------------
@@ -67,6 +69,10 @@ neg_count = 0
 counter_thd = 25
 position = []
 positionR = []
+serv_neg_count = 0
+serv_counter = 0
+serv_position = []
+serv_positionR = []
 ##------------------------------------------------------------------
 
 ## End frame flag search parameters-------------------------------
@@ -94,7 +100,7 @@ loc_frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
 ##print(xc,yc)
 
 ##cv2.imwrite('dfg.jpg', loc_frame)
-fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg, \
+morpho, fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg, \
                                                                   min_area, \
                                                                   max_area, \
                                                                   min_sn_area,\
@@ -107,6 +113,12 @@ fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.out
                                                                   counter_thd, \
                                                                   position, \
                                                                   positionR) # find a service frame
+serv_flag, serv_position, serv_positionR, serv_counter, serv_neg_count = f_s_p(morpho, \
+                                                                               xc, yc, \
+                                                                               serv_position, \
+                                                                               serv_positionR, \
+                                                                               serv_counter, \
+                                                                               serv_neg_count)
 init_frame = frame
 D.append(0)
 curr = 0
@@ -116,7 +128,7 @@ while(1):
     ret, frame = cap.read()
     if not(ret): # stop if it the end of the video
         break
-    fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg,\
+    morpho, fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg,\
                                                                       min_area, \
                                                                       max_area, \
                                                                       min_sn_area,\
@@ -129,6 +141,14 @@ while(1):
                                                                       counter_thd, \
                                                                       position, \
                                                                       positionR) # find a service frame
+    
+    serv_flag, serv_position, serv_positionR, serv_counter, serv_neg_count = f_s_p(morpho, \
+                                                                                   xc, yc, \
+                                                                                   serv_position, \
+                                                                                   serv_positionR, \
+                                                                                   serv_counter, \
+                                                                                   serv_neg_count)
+    
     end_flag, end_counter, init_frame = endf(end_counter, init_frame, frame, fps, border,\
                                              min_ball_area, max_ball_area, min_dif_border, \
                                              max_dif_border, greenLower, greenUpper, \
@@ -166,6 +186,9 @@ while(1):
             elif curr == 2:
                 D.append(2)
                 curr = 2
+            elif curr == 0 and serv_flag > 0:
+                D.append(5)
+                curr = 1
             else:
                 D.append(0)
                 curr = 0
@@ -194,6 +217,10 @@ for i in range(2*fps, len(D)-fps-1): # if it is a start, go back for 2 sec and 1
         for j in range(i, i+2*fps):
             if D[j] == 0:
                 F[j] = 4
+    elif D[i] == 5: # if it is an end frame - let it stay for a sec
+        for j in range(i-2*fps, i):
+            if D[j] == 0:
+                F[j] = 5
 
 # Put texts on frames         
 for i in range(len(F)-1):
