@@ -23,6 +23,9 @@ parser.add_argument('-i', type=int, dest='outdoor',
 parser.add_argument('-s', type=int, dest='start',
                   action='store', default=0,
                   help="Set starting time in seconds")
+parser.add_argument('-c', type=bool, dest='cut',
+                  action='store', default=False,
+                  help="Cut the video?")
 args = parser.parse_args()
 
 start = timer()
@@ -44,7 +47,7 @@ for t in range(args.start*fps):
 # Create foreground extracter
 fgbg = cv2.createBackgroundSubtractorMOG2(history=50000, varThreshold=200)
 text_to_put = {
-    0: 'IDL',
+    0: 'IDLE',
     1: 'SERVICE DETECTED',
     2: 'GAME',
     3: 'LOST BALL',
@@ -227,13 +230,21 @@ for i in range(len(F)-1):
     ret, frame = cap.read()
     if not(ret):
         break
-    if F[i] > 0:
-        text = text_to_put[F[i]]
-        if F[i] != 2:     
-            cv2.rectangle(frame, (0,0), (400, 60), (0,0,0), -1)
-            cv2.putText(frame, text, (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
-                        1.0, (255, 255, 255), 4)
+    if args.cut:
+        if F[i] > 0:
+            text = text_to_put[F[i]]
+            if F[i] != 2:     
+                cv2.rectangle(frame, (0,0), (400, 60), (0,0,0), -1)
+                cv2.putText(frame, text, (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                            1.0, (255, 255, 255), 4)
+            out.write(frame)
+    else:
+        text = text_to_put[F[i]]   
+        cv2.rectangle(frame, (0,0), (400, 60), (0,0,0), -1)
+        cv2.putText(frame, text, (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                    1.0, (255, 255, 255), 4)
         out.write(frame)
+        
 
 end = timer()
 print("Total time: ", end - start) 
