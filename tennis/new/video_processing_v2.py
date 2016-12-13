@@ -90,7 +90,9 @@ canny_thr = 100
 border = max_sec*fps
 end_counter = 0
 found_max_sec = 2
+nf_max_sec = 1
 thresh_ball_fond = found_max_sec*fps
+thresh_ball_nf = nf_max_sec*fps
 ball_cont_found = 0
 ##------------------------------------------------------------------
 
@@ -126,6 +128,7 @@ init_frame = frame
 D.append(0)
 curr = 0
 f =0
+nf_counter = 0
 # Process the video
 while(1):
     ret, frame = cap.read()
@@ -163,6 +166,8 @@ while(1):
         else:
             ball_cont_found = 0
     else:
+        nf_counter += 1
+    if nf_counter > thresh_ball_nf:
         f = 0
 ##    print(counter)
     if start_flag > 0:
@@ -179,6 +184,10 @@ while(1):
            D.append(2)
            curr = 2
            end_counter = 0
+        elif curr == 5:
+           D.append(2)
+           curr = 2
+           end_counter = -5*fps
         else:
             if curr == 2 and end_flag > 0:
                 D.append(3)
@@ -191,7 +200,7 @@ while(1):
                 curr = 2
             elif curr == 0 and serv_flag > 0:
                 D.append(5)
-                curr = 1
+                curr = 5
             else:
                 D.append(0)
                 curr = 0
@@ -232,11 +241,11 @@ for i in range(len(F)-1):
         break
     if args.cut:
         if F[i] > 0:
-            text = text_to_put[F[i]]
-            if F[i] != 2:     
-                cv2.rectangle(frame, (0,0), (400, 60), (0,0,0), -1)
-                cv2.putText(frame, text, (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
-                            1.0, (255, 255, 255), 4)
+##            text = text_to_put[F[i]]
+##            if F[i] != 2:     
+##                cv2.rectangle(frame, (0,0), (400, 60), (0,0,0), -1)
+##                cv2.putText(frame, text, (30, 30), cv2.FONT_HERSHEY_SIMPLEX,
+##                            1.0, (255, 255, 255), 4)
             out.write(frame)
     else:
         text = text_to_put[F[i]]   
