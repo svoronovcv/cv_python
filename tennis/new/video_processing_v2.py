@@ -8,6 +8,7 @@ import find_start_frame_v2 as firstf
 from ball_tracking_v2 import fnd_endframe as endf
 from court_det import find_serv_point as f_sp
 from service_find import find_service_pos as f_s_p
+from player_speed import speed
 
 cv2.ocl.setUseOpenCL(False)
 
@@ -40,8 +41,9 @@ Width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 Height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fps = int(cap.get(cv2.CAP_PROP_FPS ))
 fourcc = cv2.VideoWriter_fourcc('F','M','P','4')
-out = cv2.VideoWriter("processed.avi", fourcc, np.double(fps), (Width,Height), True)
-print(out.isOpened()) # Check if file is sucessfully created
+out = cv2.VideoWriter("processed_2.avi", fourcc, np.double(fps), (Width,Height), True)
+if out.isOpened():
+    print("Video file has been created!") # Check if file is sucessfully created
 for t in range(args.start*fps):
     ret, frame = cap.read()
 # Create foreground extracter
@@ -130,8 +132,18 @@ curr = 0
 f =0
 nf_counter = 0
 # Process the video
+it = 0
+low_speed = 0
+speed_flag = 0
+slow = 0
+slow_count = 0
+fast_count = 0
+speed_position = [0, 0]
+no_player = 1
+speed_start = 0
 while(1):
     ret, frame = cap.read()
+    it += 1
     if not(ret): # stop if it the end of the video
         break
     morpho, fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg,\
@@ -154,11 +166,20 @@ while(1):
                                                                                    serv_positionR, \
                                                                                    serv_counter, \
                                                                                    serv_neg_count)
-    
     end_flag, end_counter, init_frame = endf(end_counter, init_frame, frame, fps, border,\
                                              min_ball_area, max_ball_area, min_dif_border, \
                                              max_dif_border, greenLower, greenUpper, \
                                              canny_thr)  # find an end frame
+    if it > 150:
+        speed_start, slow, slow_count, fast_count, speed_position, no_player = speed(speed_start, morpho, slow, slow_count, fast_count, speed_position, no_player)
+        if speed_start < 1:
+            low_speed +=1
+        else:
+            if low_speed > fps:
+                speed_flag = 1
+            else:
+                speed_flag = 0
+            low_speed = 0
     if end_counter == 0:
         f +=1
         if f > thresh_ball_fond:
@@ -180,6 +201,9 @@ while(1):
         D.append(1)
         curr = 1
     else:
+        if speed_flag > 0 and curr == 0:
+            D.append(5)
+            curr = 5
         if curr == 1:
            D.append(2)
            curr = 2
@@ -218,8 +242,8 @@ for i in range(2*fps, len(D)-fps-1): # if it is a start, go back for 2 sec and 1
             for j in range(i+np.uint8(fps/3)):
                 F[j] = 1
         else:
-            for j in range(i-2*fps,i+np.uint8(fps/3)): # if it is a start 
-               if D[j] == 0:
+            for j in range(i-3*fps,i+np.uint8(fps/3)): # if it is a start 
+               if D[j] == 0 or D[j] == 5:
                    F[j] = 1                # and less then a sec left - assign start from 0, not 25 frames back
     elif D[i] == 3: # if it is an end frame - let it stay for a sec
         for j in range(i, i+2*fps):
@@ -256,7 +280,14 @@ for i in range(len(F)-1):
         
 
 end = timer()
-print("Total time: ", end - start) 
+minutes = np.int(np.floor((end - start)/60))
+sec = np.int(np.round((end - start) - np.int(np.floor((end - start)/60)*60)))
+if sec < 10:
+    sec = "0"+str(sec)
+if minutes < 10:
+    print("Total time: ", "0"+str(minutes)+":"+str(sec))
+else:
+    print("Total time: ", str(minutes)+":"+str(sec))
 out.release()
 out = None
 cap.release()
