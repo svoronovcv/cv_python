@@ -1,5 +1,7 @@
 import cv2
 import numpy as np
+import os
+import sys
 from argparse import ArgumentParser
 from sys import argv
 from timeit import default_timer as timer
@@ -25,7 +27,7 @@ parser.add_argument('-s', type=int, dest='start',
                   action='store', default=0,
                   help="Set starting time in seconds")
 parser.add_argument('-c', type=bool, dest='cut',
-                  action='store', default=False,
+                  action='store', default=True,
                   help="Cut the video?")
 args = parser.parse_args()
 
@@ -37,11 +39,12 @@ D = []
 ##fourcc = cv2.VideoWriter_fourcc('F','M','P','4')
 video = args.fname #"D:\Waterloo tennis Rodrigo 15_06_2016.mp4"
 cap = cv2.VideoCapture(video)
+frames_num = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 Width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 Height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fps = int(cap.get(cv2.CAP_PROP_FPS ))
 fourcc = cv2.VideoWriter_fourcc('F','M','P','4')
-out = cv2.VideoWriter("processed_2.avi", fourcc, np.double(fps), (Width,Height), True)
+out = cv2.VideoWriter("processed-"+os.path.basename(video)+".avi", fourcc, np.double(fps), (Width,Height), True)
 if out.isOpened():
     print("Video file has been created!") # Check if file is sucessfully created
 for t in range(args.start*fps):
@@ -141,11 +144,17 @@ fast_count = 0
 speed_position = [0, 0]
 no_player = 1
 speed_start = 0
+print("The video file is being processed:")
 while(1):
     ret, frame = cap.read()
     it += 1
     if not(ret): # stop if it the end of the video
         break
+    procent = np.round(1000*it/frames_num)/10
+    if procent > 100:
+        procent = 100
+    sys.stdout.write('\r%s %%' % procent)
+    sys.stdout.flush()
     morpho, fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg,\
                                                                       min_area, \
                                                                       max_area, \
@@ -280,6 +289,7 @@ for i in range(len(F)-1):
         
 
 end = timer()
+print("\nProcessing completed successfully!")
 minutes = np.int(np.floor((end - start)/60))
 sec = np.int(np.round((end - start) - np.int(np.floor((end - start)/60)*60)))
 if sec < 10:
