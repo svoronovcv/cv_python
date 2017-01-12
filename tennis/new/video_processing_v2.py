@@ -26,7 +26,7 @@ parser.add_argument('-i', type=int, dest='outdoor',
 parser.add_argument('-s', type=int, dest='start',
                   action='store', default=0,
                   help="Set starting time in seconds")
-parser.add_argument('-c', type=bool, dest='cut',
+parser.add_argument('-c', type=str, dest='cut',
                   action='store', default=True,
                   help="Cut the video?")
 args = parser.parse_args()
@@ -37,6 +37,10 @@ D = []
 # Init video in and out video
 ##video = "D:\Waterloo tennis Rodrigo 15_06_2016.mp4"
 ##fourcc = cv2.VideoWriter_fourcc('F','M','P','4')
+if args.cut == "True" or args.cut == True:
+    args.cut = True
+else:
+    args.cut = False
 video = args.fname #"D:\Waterloo tennis Rodrigo 15_06_2016.mp4"
 cap = cv2.VideoCapture(video)
 frames_num = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
@@ -57,7 +61,8 @@ text_to_put = {
     2: 'GAME',
     3: 'LOST BALL',
     4: 'CONTINUOUS BALL',
-    5: 'SERVICE POSITION'
+    5: 'SERVICE POSITION',
+    6: 'HIGH SPEED'
 } # Dictionary for flags
 
 ## Start frame flag search parameters-------------------------------
@@ -180,7 +185,10 @@ while(1):
                                              max_dif_border, greenLower, greenUpper, \
                                              canny_thr)  # find an end frame
     if it > 150:
-        speed_start, slow, slow_count, fast_count, speed_position, no_player = speed(speed_start, morpho, slow, slow_count, fast_count, speed_position, no_player)
+        speed_start, slow, slow_count, fast_count, speed_position, no_player = speed(speed_start, \
+                                                                                     morpho, slow, slow_count, \
+                                                                                     fast_count, speed_position, \
+                                                                                     no_player)
         if speed_start < 1:
             low_speed +=1
         else:
@@ -211,7 +219,7 @@ while(1):
         curr = 1
     else:
         if speed_flag > 0 and curr == 0:
-            D.append(5)
+            D.append(6)
             curr = 5
         if curr == 1:
            D.append(2)
@@ -262,10 +270,14 @@ for i in range(2*fps, len(D)-fps-1): # if it is a start, go back for 2 sec and 1
         for j in range(i, i+2*fps):
             if D[j] == 0:
                 F[j] = 4
-    elif D[i] == 5: # if it is an end frame - let it stay for a sec
+    elif D[i] == 5: 
         for j in range(i-2*fps, i):
             if D[j] == 0:
                 F[j] = 5
+    elif D[i] == 6: 
+        for j in range(i-4*fps, i):
+            if D[j] == 0:
+                F[j] = 6
 
 # Put texts on frames         
 for i in range(len(F)-1):

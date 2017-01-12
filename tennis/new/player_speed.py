@@ -15,6 +15,9 @@ def speed(speed_flag, morpho, slow, slow_count, fast_count, position, no_player)
             continue
         (x, y, w, h) = cv2.boundingRect(cnt)
         if y+h < 150 or \
+           y+h > 350 or \
+           x+w > 610 or \
+           x < 20 or \
            w > 100 or \
         h > 200 or \
         w < 30 or \
@@ -24,8 +27,12 @@ def speed(speed_flag, morpho, slow, slow_count, fast_count, position, no_player)
         i+=1
         (xp, yp, wp, hp) = cv2.boundingRect(cnt)
     if found and i < 2:
-        speed = np.sqrt((xp+int(wp/2)-position[0])**2 + (yp+int(hp/2)-position[1])**2) / no_player
-        if speed < 6:
+        if no_player > 5:
+            speed = 0
+            position = (xp+int(wp/2),yp+int(hp/2))
+        else:
+            speed = np.sqrt((xp+int(wp/2)-position[0])**2 + (yp+int(hp/2)-position[1])**2) / no_player
+        if speed < 6 or speed > 50:
             slow_count += 1
         else:
             fast_count += 1
