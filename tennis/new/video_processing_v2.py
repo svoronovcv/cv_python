@@ -62,7 +62,8 @@ text_to_put = {
     3: 'LOST BALL',
     4: 'CONTINUOUS BALL',
     5: 'SERVICE POSITION',
-    6: 'HIGH SPEED'
+    6: 'HIGH SPEED',
+    7: 'SLOW PLAYER'
 } # Dictionary for flags
 
 ## Start frame flag search parameters-------------------------------
@@ -111,8 +112,8 @@ ret, frame = cap.read()
 loc_frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
                        interpolation = cv2.INTER_CUBIC)
 (xc,yc) = f_sp(loc_frame)
-##cv2.imwrite('n2.jpg',loc_frame)
-##print(xc,yc)
+cv2.imwrite('n2.jpg',loc_frame)
+print(xc,yc)
 
 ##cv2.imwrite('dfg.jpg', loc_frame)
 morpho, fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg, \
@@ -141,7 +142,7 @@ f =0
 nf_counter = 0
 # Process the video
 it = 0
-low_speed = 0
+high_speed = 0
 speed_flag = 0
 slow = 0
 slow_count = 0
@@ -149,6 +150,8 @@ fast_count = 0
 speed_position = [0, 0]
 no_player = 1
 speed_start = 0
+very_slow = 0
+slow_flag = 0
 print("The video file is being processed:")
 while(1):
     ret, frame = cap.read()
@@ -185,18 +188,18 @@ while(1):
                                              max_dif_border, greenLower, greenUpper, \
                                              canny_thr)  # find an end frame
     if it > 150:
-        speed_start, slow, slow_count, fast_count, speed_position, no_player = speed(speed_start, \
+        speed_start, slow, slow_count, fast_count, speed_position, no_player, very_slow = speed(speed_start, \
                                                                                      morpho, slow, slow_count, \
                                                                                      fast_count, speed_position, \
-                                                                                     no_player)
+                                                                                     no_player, very_slow)
         if speed_start < 1:
-            low_speed +=1
+            high_speed +=1
         else:
-            if low_speed > fps:
+            if high_speed > fps:
                 speed_flag = 1
             else:
                 speed_flag = 0
-            low_speed = 0
+            high_speed = 0
     if end_counter == 0:
         f +=1
         if f > thresh_ball_fond:
@@ -208,7 +211,13 @@ while(1):
     if nf_counter > thresh_ball_nf:
         f = 0
 ##    print(counter)
+    if very_slow > 4*fps:
+        slow_flag = 1
+        very_slow = 0
+    else:
+        slow_flag = 0
     if start_flag > 0:
+        very_slow = -5*fps
         if curr == 2:
             for e in range((len(D)-fps),(len(D)-1)):
                 if D[e] != 2:
@@ -219,6 +228,7 @@ while(1):
         curr = 1
     else:
         if speed_flag > 0 and curr == 0:
+            very_slow = -5*fps
             D.append(6)
             curr = 5
         if curr == 1:
@@ -236,11 +246,15 @@ while(1):
             elif curr == 2 and ball_cont_found > 0:
                 D.append(4)
                 curr = 4
+            elif curr == 2 and slow_flag > 0:
+                D.append(7)
+                curr = 3
             elif curr == 2:
                 D.append(2)
                 curr = 2
             elif curr == 0 and serv_flag > 0:
                 D.append(5)
+                very_slow = -5*fps
                 curr = 5
             else:
                 D.append(0)
@@ -278,6 +292,12 @@ for i in range(2*fps, len(D)-fps-1): # if it is a start, go back for 2 sec and 1
         for j in range(i-4*fps, i):
             if D[j] == 0:
                 F[j] = 6
+    elif D[i] == 7: 
+        for j in range(i-fps, i):
+            if D[j] == 2:
+                F[j] = 7
+            else:
+                break
 
 # Put texts on frames         
 for i in range(len(F)-1):

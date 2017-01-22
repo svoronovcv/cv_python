@@ -4,7 +4,7 @@ import numpy as np
 
 cv2.ocl.setUseOpenCL(False)
 
-def speed(speed_flag, morpho, slow, slow_count, fast_count, position, no_player):
+def speed(speed_flag, morpho, slow, slow_count, fast_count, position, no_player, very_slow):
     thresh = 10
     (_,cnts,_) = cv2.findContours(morpho, cv2.RETR_CCOMP,
                 cv2.CHAIN_APPROX_SIMPLE)
@@ -36,6 +36,8 @@ def speed(speed_flag, morpho, slow, slow_count, fast_count, position, no_player)
             slow_count += 1
         else:
             fast_count += 1
+        if speed < 2:
+            very_slow += 1
         position = (xp+int(wp/2),yp+int(hp/2))
     if not(found):
         no_player +=1
@@ -54,7 +56,7 @@ def speed(speed_flag, morpho, slow, slow_count, fast_count, position, no_player)
         slow = 0
         speed_flag = 0
         fast_count = 0
-    return speed_flag, slow, slow_count, fast_count, position, no_player
+    return speed_flag, slow, slow_count, fast_count, position, no_player, very_slow
     
 ##import cv2
 ##import numpy as np
