@@ -20,7 +20,7 @@ def speed(speed_flag, morpho, slow, slow_count, fast_count, position, no_player,
            x < 20 or \
            w > 100 or \
         h > 200 or \
-        w < (10 + 0.64*(y+h-175)) or \
+        w < 10 or \
         h < 35:
             continue    
         found = True

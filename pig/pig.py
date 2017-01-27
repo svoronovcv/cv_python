@@ -5,14 +5,14 @@ import pymeanshift as pms
 
 
 def segment(img):
-    shifted = cv2.pyrMeanShiftFiltering(img, 200, 100)
+    shifted = cv2.pyrMeanShiftFiltering(img, 100, 100)
     ##shifted = cv2.pyrMeanShiftFiltering(ROI, sp=7, sr=25, \
     ##                                    maxLevel=1, \
     ##                                    termcrit=(
     ##                                        cv2.TERM_CRITERIA_EPS \
     ##                                        + cv2.TERM_CRITERIA_MAX_ITER, 5, 1))
-    cv2.imshow('olaa', shifted)
-    cv2.waitKey()
+##    cv2.imshow('olaa', shifted)
+##    cv2.waitKey()
     (seg_image, lab_image, num_regions) = pms.segment(shifted, \
                                                       spatial_radius=5,\
                                                       range_radius=5, \
@@ -32,20 +32,33 @@ def segment(img):
     return num_regions
 
 cap = cv2.VideoCapture('Pig 1.MOV')
+frame = None
 for i  in range(90):
     ret, frame = cap.read()
-
-ret, frame = cap.read()
-frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
+    frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
                        interpolation = cv2.INTER_CUBIC)
+Width = frame.shape[1]
+Height = frame.shape[0]
+fps = int(cap.get(cv2.CAP_PROP_FPS ))
+fourcc = cv2.VideoWriter_fourcc('F','M','P','4')
+out = cv2.VideoWriter("processed-pig.avi", fourcc, np.double(25), (Width,Height), True)
+i = 0
+while(i < 25):
+    ret, frame = cap.read()
+    i+=1
+    print(i)
+    if not(ret):
+        break
+    frame = cv2.resize(frame,None,fx=0.5, fy=0.5,interpolation = cv2.INTER_CUBIC)
+    A = segment(frame)
+    out.write(frame)
+
+out.release()
+out = None
 ##rows,cols = frame.shape[0], frame.shape[1]
 ##M = cv2.getRotationMatrix2D((cols/2,rows/2),-90,1)
 ##dst = cv2.warpAffine(frame,M,(cols,rows))
-A = segment(frame)
-print(A)
-cv2.imshow('ola', frame)
-cv2.waitKey()
-cv2.destroyAllWindows()
+
 ##            (x, y, w, h) = cv2.boundingRect(c)
 ##            B.append((x, y, w, h))
     
