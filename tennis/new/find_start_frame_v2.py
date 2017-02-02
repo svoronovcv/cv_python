@@ -16,7 +16,7 @@ def avg_speed(posit):
     hist = 25
     speed = []
     (x1,y1) = posit[0]
-    for i in range(1, hist):
+    for i in range(1, len(posit)):
         (x,y) = posit[i]
         speed.append(np.sqrt((x-x1)**2 + (y-y1)**2))
         (x1,y1) = (x,y)

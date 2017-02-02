@@ -111,9 +111,9 @@ ball_cont_found = 0
 ret, frame = cap.read()
 loc_frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
                        interpolation = cv2.INTER_CUBIC)
-(xc,yc) = (319,207) #f_sp(loc_frame)
-cv2.imwrite('n2.jpg',loc_frame)
-print(xc,yc)
+(xc,yc) = (320,200) #f_sp(loc_frame)
+##cv2.imwrite('n2.jpg',loc_frame)
+##print(xc,yc)
 
 ##cv2.imwrite('dfg.jpg', loc_frame)
 morpho, fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg, \

@@ -62,7 +62,7 @@ def find_service_pos(morpho, xc, yc, position, positionR, count, neg_count):
                 position = []
                 positionR = []
                 count = 0
-            if count > 25 and (fsf.avg_speed(position) < 1 or fsf.avg_speed(positionR) < 1):
+            if count > 25 and len(position) >25 and len(positionR) > 25 and (fsf.avg_speed(position) < 1 or fsf.avg_speed(positionR) < 1):
                 serv_flag = 1
                 count = 0
     if found:
