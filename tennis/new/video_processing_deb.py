@@ -59,6 +59,7 @@ if not(args.debug):
     out = cv2.VideoWriter("processed-"+os.path.basename(video)+".avi", fourcc, np.double(fps), (Width,Height), True)
 else:
     out = cv2.VideoWriter("debug-"+os.path.basename(video)+".avi", fourcc, np.double(fps), (Width,int(Height/2)), True)
+    outmor = cv2.VideoWriter("mor-"+os.path.basename(video)+".avi", fourcc, np.double(fps), (int(Width/2),int(Height/2)), True)
 if out.isOpened():
     print("Video file has been created!") # Check if file is sucessfully created
 for t in range(args.start*fps):
@@ -126,7 +127,7 @@ ball_cont_found = 0
 ret, frame = cap.read()
 loc_frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
                        interpolation = cv2.INTER_CUBIC)
-(xc,yc) = f_sp(loc_frame)
+(xc,yc) = (318, 206) #f_sp(loc_frame)
 cv2.imwrite('n2.jpg',loc_frame)
 print(xc,yc)
 
@@ -144,7 +145,13 @@ morpho, fgbg, counter, neg_count, position, positionR, start_flag, morka = first
                                                                   counter_thd, \
                                                                   position, \
                                                                   positionR) # find a service frame
-mor_arr.append(morka)
+M = np.uint8(np.zeros(frame.shape))
+M = cv2.resize(M,None,fx=0.5, fy=0.5,
+                   interpolation = cv2.INTER_CUBIC)
+M[:,:,0] = np.uint8(morka)
+M[:,:,1] = np.uint8(morka)
+M[:,:,2] = np.uint8(morka)
+outmor.write(M)
 serv_flag, serv_position, serv_positionR, serv_counter, serv_neg_count = f_s_p(morpho, \
                                                                                xc, yc, \
                                                                                serv_position, \
@@ -171,7 +178,10 @@ slow_flag = 0
 print("The video file is being processed:")
 while(1):
     ret, frame = cap.read()
+##    cv2.imshow('ola', frame)
+##    cv2.waitKey(10)
     it += 1
+##    print(it)
     if not(ret): # stop if it the end of the video
         break
     procent = np.round(1000*it/frames_num)/10
@@ -191,8 +201,14 @@ while(1):
                                                                       neg_count, \
                                                                       counter_thd, \
                                                                       position, \
-                                                                      positionR) # find a service frame
-    mor_arr.append(morka)
+                                                                     positionR) # find a service frame
+    M = np.uint8(np.zeros(frame.shape))
+    M = cv2.resize(M,None,fx=0.5, fy=0.5,
+                       interpolation = cv2.INTER_CUBIC)
+    M[:,:,0] = np.uint8(morka)
+    M[:,:,1] = np.uint8(morka)
+    M[:,:,2] = np.uint8(morka)
+    outmor.write(M)
     
     serv_flag, serv_position, serv_positionR, serv_counter, serv_neg_count = f_s_p(morpho, \
                                                                                    xc, yc, \
@@ -289,6 +305,7 @@ while(1):
         
 # Reinit the in video in order to play it again and edit flags
 cap.release()
+capmor = cv2.VideoCapture("mor-"+os.path.basename(video)+".avi")
 cap = cv2.VideoCapture(video)
 for t in range(args.start*fps):
     ret, frame = cap.read()
@@ -329,7 +346,8 @@ for i in range(2*fps, len(D)-fps-1): # if it is a start, go back for 2 sec and 1
 # Put texts on frames         
 for i in range(len(F)-1):
     ret, frame = cap.read()
-    if not(ret):
+    retmor, mor = capmor.read()
+    if not(ret) or not(retmor):
         break
     if not(args.debug):
         if args.cut:
@@ -363,10 +381,11 @@ for i in range(len(F)-1):
         ball_text = str(ball_arr[i])
         cv2.putText(frame, ball_text, (15, 80), cv2.FONT_HERSHEY_SIMPLEX,
                         0.75, (255, 255, 255), 3)
-        M = np.uint8(np.zeros(frame.shape))
-        M[:,:,0] = np.uint8(mor_arr[i])
-        M[:,:,1] = np.uint8(mor_arr[i])
-        M[:,:,2] = np.uint8(mor_arr[i])
+        M = mor
+##        M = np.uint8(np.zeros(frame.shape))
+##        M[:,:,0] = np.uint8(mor_arr[i])
+##        M[:,:,1] = np.uint8(mor_arr[i])
+##        M[:,:,2] = np.uint8(mor_arr[i])
         if i >151:
             cv2.circle(frame, tuple(pos_arr[i]), 3, (255,0,0), -1)
             cv2.circle(M, tuple(pos_arr[i]), 3, (255,0,0), -1)
@@ -379,6 +398,7 @@ for i in range(len(F)-1):
         frame = np.hstack((frame,M))
 ##        cv2.imshow('ola', frame)
 ##        cv2.waitKey()
+        cv2.imwrite('n2.jpg',frame)
         out.write(frame)
            
                 
@@ -394,6 +414,8 @@ else:
     print("Total time: ", str(minutes)+":"+str(sec))
 out.release()
 out = None
+outmor.release()
+outmor = None
 cap.release()
 cap = None
 cv2.destroyAllWindows()
