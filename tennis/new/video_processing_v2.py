@@ -47,7 +47,7 @@ frames_num = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
 Width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 Height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fps = int(cap.get(cv2.CAP_PROP_FPS ))
-fourcc = cv2.VideoWriter_fourcc('F','M','P','4')
+fourcc = cv2.VideoWriter_fourcc('H','2','6','4')
 out = cv2.VideoWriter("processed-"+os.path.basename(video)+".avi", fourcc, np.double(fps), (Width,Height), True)
 if out.isOpened():
     print("Video file has been created!") # Check if file is sucessfully created

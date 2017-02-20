@@ -61,10 +61,9 @@ text_to_put = {
     1: 'SERVICE DETECTED',
     2: 'GAME',
     3: 'LOST BALL',
-    4: 'CONTINUOUS BALL',
-    5: 'SERVICE POSITION',
-    6: 'HIGH SPEED',
-    7: 'SLOW PLAYER'
+    4: 'SERVICE POSITION',
+    5: 'HIGH SPEED',
+    6: 'SLOW PLAYER'
 } # Dictionary for flags
 
 ## Start frame flag search parameters-------------------------------
@@ -74,9 +73,7 @@ min_sn_area = 10
 max_sn_area = 200
 mask = np.zeros((int(Height/2), int(Width/2),3), dtype=np.uint16)
 mask[100:, :,:] = 1
-mask1 = np.zeros((int(Height/2), int(Width/2),3), dtype=np.uint16)+255 #cv2.imread('ff.jpg')
-##(yc, xc) = (Height/4 + 100 -40*args.height, Width/4)
-##(yc, xc) = (215, 307)
+mask1 = np.zeros((int(Height/2), int(Width/2),3), dtype=np.uint16)+255
 ksize = 15 + 5*args.outdoor
 kernel = np.ones((ksize,ksize),np.uint16)
 counter = 0
@@ -135,8 +132,8 @@ hog_flag = 0
 
 ## Do the first iteration in order to obtain init_frame for end_frame search
 ret, frame = cap.read()
-loc_frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
-                       interpolation = cv2.INTER_CUBIC)
+##loc_frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
+##                       interpolation = cv2.INTER_CUBIC)
 (xc,yc) = (320,200) #f_sp(loc_frame)
 ##cv2.imwrite('n2.jpg',loc_frame)
 ##print(xc,yc)
@@ -168,33 +165,34 @@ f =0
 nf_counter = 0
 # Process the video
 it = 0
-high_speed = 0
 speed_flag = 0
-slow = 0
-slow_count = 0
-fast_count = 0
-speed_position = [0, 0]
-no_player = 1
-speed_start = 0
-very_slow = 0
-slow_flag = 0
 print("The video file is being processed:")
 while(1):
+    
+########    READ FRAME
     ret, frame = cap.read()
     it += 1
     if not(ret): # stop if it the end of the video
         break
+    
+########    UPDATE OUTPUT
+    
     procent = np.round(1000*it/frames_num)/10
     if procent > 100:
         procent = 100
     sys.stdout.write('\r%s %%' % procent)
     sys.stdout.flush()
+    
+########    HoG SPEED
+    
     hog_to, hog_speed, hog_xpp, hog_ypp, hog_xp, hog_yp, hog_slow, hog_no_player, hog_flag = hog_proc(hog_flag, hog, frame, hog_speed, \
                                                                                           hog_to, hog_xpp, \
                                                                                           hog_ypp, hog_xp, \
                                                                                           hog_yp, hog_slow, \
                                                                                           hog_no_player, \
                                                                                           hog_sec)
+########    SERVING POSITION
+    
     morpho, fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg,\
                                                                       min_area, \
                                                                       max_area, \
@@ -207,7 +205,8 @@ while(1):
                                                                       neg_count, \
                                                                       counter_thd, \
                                                                       position, \
-                                                                      positionR) # find a service frame
+                                                                      positionR)
+########    RECEIVING POSITION
     
     serv_flag, serv_position, serv_positionR, serv_counter, serv_neg_count = f_s_p(morpho, \
                                                                                    xc, yc, \
@@ -215,69 +214,59 @@ while(1):
                                                                                    serv_positionR, \
                                                                                    serv_counter, \
                                                                                    serv_neg_count)
+########    BALL SEARCH
+    
     end_flag, end_counter, init_frame = endf(end_counter, init_frame, frame, fps, border,\
                                              min_ball_area, max_ball_area, min_dif_border, \
                                              max_dif_border, greenLower, greenUpper, \
                                              canny_thr)  # find an end frame
 
-    if end_counter == 0:
-        f +=1
-        if f > thresh_ball_fond:
-            ball_cont_found = 1
-        else:
-            ball_cont_found = 0
-    else:
-        nf_counter += 1
-    if start_flag > 0:
-        very_slow = -5*fps
-        if curr == 2:
-            for e in range((len(D)-fps),(len(D)-1)):
-                if D[e] != 2:
-                    break
-                else:
-                    D[e] = 0
-        D.append(1)
-        curr = 1
-    else:
-        if hog_flag > 0 and curr == 0:
-            D.append(6)
+########    FLAG IDENTIFICATION
+    if curr == 0:
+        if start_flag > 0:
+            D.append(1)
+            curr = 1
+        elif hog_flag > 0.5:
+            D.append(5)
             curr = 5
-        if curr == 1:
+        elif serv_flag > 0:
+            D.append(4)
+            curr = 4
+        else:
+            D.append(0)
+            curr = 0
+    else:
+        if curr == 1 or curr == 5:
            D.append(2)
            curr = 2
            end_counter = 0
-        elif curr == 5:
+        elif curr == 4:
            D.append(2)
            curr = 2
            end_counter = -5*fps
         else:
-            if curr == 2 and end_flag > 0:
+            if end_flag > 0:
                 D.append(3)
-                curr = 3
-            elif curr == 2 and ball_cont_found > 0:
-                D.append(4)
-                curr = 4
-            elif curr == 2 and hog_flag < 0:
-                D.append(7)
-                curr = 3
-            elif curr == 2:
+                curr = 0
+            elif hog_flag < 0.5:
+                D.append(6)
+                curr = 0
+            else:
                 D.append(2)
                 curr = 2
-            elif curr == 0 and serv_flag > 0:
-                D.append(5)
-                curr = 5
-            else:
-                D.append(0)
-                curr = 0
+
         
-# Reinit the in video in order to play it again and edit flags
+####### Reinit the in video in order to play it again and edit flags
+                
 cap.release()
 cap = cv2.VideoCapture(video)
 for t in range(args.start*fps):
     ret, frame = cap.read()
-# Edit the flags
+    
+####### Edit the flags
+    
 F = np.copy(D)
-for i in range(2*fps, len(D)-fps-1): # if it is a start, go back for 2 sec and 10 frames forward
+for i in range(2*fps, len(D)-2*fps-1): # if it is a start, go back for 2 sec and 10 frames forward
     if D[i] == 1:
         if i < 2*fps:
             for j in range(i+np.uint8(fps/3)):
@@ -290,29 +279,25 @@ for i in range(2*fps, len(D)-fps-1): # if it is a start, go back for 2 sec and 1
         for j in range(i, i+2*fps):
             if D[j] == 0:
                 F[j] = 3
-    elif D[i] == 4: # if it is an end frame - let it stay for a sec
-        for j in range(i, i+2*fps):
+    elif D[i] == 4: 
+        for j in range(i-2*fps, i):
             if D[j] == 0:
                 F[j] = 4
     elif D[i] == 5: 
-        for j in range(i-2*fps, i):
+        for j in range(i-3*fps, i):
             if D[j] == 0:
                 F[j] = 5
     elif D[i] == 6: 
-        for j in range(i-3*fps, i):
-            if D[j] == 0:
-                F[j] = 6
-    elif D[i] == 7: 
         for j in range(i-8*fps, i-2*fps):
-            F[j] = 7
+            F[j] = 6
 
-# Put texts on frames         
+####### Put texts on frames
 for i in range(len(F)-1):
     ret, frame = cap.read()
     if not(ret):
         break
     if args.cut:
-        if F[i] > 0 and F[i] < 7:
+        if F[i] != 0 and F[i] != 6:
             out.write(frame)
     else:
         text = text_to_put[F[i]]   
@@ -323,6 +308,7 @@ for i in range(len(F)-1):
         
 
 end = timer()
+print(len(D),it)
 print("\nProcessing completed successfully!")
 minutes = np.int(np.floor((end - start)/60))
 sec = np.int(np.round((end - start) - np.int(np.floor((end - start)/60)*60)))
