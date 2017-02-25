@@ -57,12 +57,8 @@ if __name__ == '__main__':
     img_points = []
     h, w = 0, 0
     img_names_undistort = []
-    #us = [10,31,106,194,205,215,227,303,335,46,64,77,120,298]
-    us = range(571)
     for fn in img_names:
         path, name, ext = splitfn(fn)
-        if not(name.isdigit()):
-            continue
         print('processing %s... ' % fn, end='')
         img = cv2.imread(fn, 0)
         if img is None:
@@ -102,19 +98,18 @@ if __name__ == '__main__':
 
     # undistort the image with the calibration
     print('')
-##    for img_found in img_names_undistort:
-##        img = cv2.imread(img_found)
-##
-##        h,  w = img.shape[:2]
-##        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, dist_coefs, (w, h), 1, (w, h))
-##        dist_coefs[0, 4] = 0
-##        dst = cv2.undistort(img, camera_matrix, dist_coefs, None, newcameramtx)
-##
-##        # crop and save the image
-##        x, y, w, h = roi
-##        dst = dst[y:y+h, x:x+w]
-##        outfile = img_found + '_undistorted.png'
-##        print('Undistorted image written to: %s' % outfile)
-##        cv2.imwrite(outfile, dst)
-##
-##    cv2.destroyAllWindows()
+    for img_found in img_names_undistort:
+        img = cv2.imread(img_found)
+
+        h,  w = img.shape[:2]
+        newcameramtx, roi = cv2.getOptimalNewCameraMatrix(camera_matrix, dist_coefs, (w, h), 1, (w, h))
+        dist_coefs[0, 4] = 0
+        dst = cv2.undistort(img, camera_matrix, dist_coefs, None, newcameramtx)
+
+        # crop and save the image
+        x, y, w, h = roi
+        dst = dst[y:y+h, x:x+w]
+        outfile = img_found + '_undistorted.png'
+        print('Undistorted image written to: %s' % outfile)
+        cv2.imwrite(outfile, dst)
+

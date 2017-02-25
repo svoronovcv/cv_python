@@ -1,7 +1,7 @@
 clc
 clear all
 close all
-
+% Load data
 gaze = load('/home/pc/Desktop/MainExp/gaze.mat');
 startingTime = load('/home/pc/Desktop/MainExp/gazeTimestamp.mat');
 workingDir = dir('/home/pc/Desktop/MainExp/');
@@ -13,7 +13,7 @@ Names = {'Ajung', 'Camille', 'Denys', 'Iason', 'Jose', 'Laura', 'Mahdi', 'Murali
 % S.BPORY = cell(size(gaze.BPORY));
 S = load('newgaze_Snfull.mat');
 figure
-for j = 3:3 % length(DirNames)
+for j = 3:3 % length(DirNames) % iterations for names
     k = findNameidx(DirNames(j), Names);
     if(isdir(char(strcat('/home/pc/Desktop/MainExp/', DirNames(j)))))
         trial = findTrialnum(DirNames(j));
@@ -36,8 +36,8 @@ for j = 3:3 % length(DirNames)
             newX = Xi;
             newY = Yi;
             firstFrame = findStart(initStart, tm, imageNames)
-            for t = 1:1
-                a = firstFrame+163*t;
+            for t = 1:1 % iterations for trials
+                a = firstFrame+163*t; % start and end of a trial
                 b = a + 80; %100;
                 frame1 = imread(fullfile(Dir,imageNames{a}));
                 frame1g = rgb2gray(frame1);
@@ -54,15 +54,15 @@ for j = 3:3 % length(DirNames)
                 oldcoords = [];
                 itka = 0;
                 Figure = figure;
-                for i = a+1:b%length(imageNames)
+                for i = a+1:b%length(imageNames) % iterations for images in the trial
                     itka = itka+1;
                     oldcoord = [Xi(i + length(Xi)-length(imageNames)) Yi(i + length(Xi)-length(imageNames))];
                     frame2 = imread(fullfile(Dir,imageNames{i}));
                     frame2g = rgb2gray(frame2);
                     [transform, inlierPtsDistorted,inlierPtsOriginal, status, FASTFeat2, ...
                         validFAST2, SURFFeat2, validSURF2, BRISKFeat2, validBRISK2] = ...
-                        featmatch3(frame2g, FASTFeat1, validFAST1, SURFFeat1, validSURF1,BRISKFeat1, validBRISK1);
-                    FASTFeat1 = FASTFeat2;
+                        featmatch3(frame2g, FASTFeat1, validFAST1, SURFFeat1, validSURF1,BRISKFeat1, validBRISK1); % match the features
+                    FASTFeat1 = FASTFeat2; % reassign the features
                     validFAST1 = validFAST2;
                     SURFFeat1 = SURFFeat2;
                     validSURF1 = validSURF2;
@@ -85,12 +85,13 @@ for j = 3:3 % length(DirNames)
                         H = transform.T*H;
                     end
                     %     oldcoord = [829 603];
+					% compute the new coordinates
                     U = transform.T;
                     newcoo = transformPointsForward(projective2d(H), oldcoord);
                     newcoord = transformPointsForward(projective2d(H), oldcoord);
                     newX((i + length(Xi)-length(imageNames))) = newcoord(1);
                     newY((i + length(Xi)-length(imageNames))) = newcoord(2);
-                    outputView = imref2d(size(frame2));
+                    outputView = imref2d(size(frame2)); % display the transformed image
                     Fr = imwarp(frame2, projective2d(H),'OutputView', outputView);
                         imshow(frame2)
                         hold on
