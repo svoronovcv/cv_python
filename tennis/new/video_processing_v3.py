@@ -36,8 +36,6 @@ start = timer()
 D = []
 
 # Init video in and out video
-##video = "D:\Waterloo tennis Rodrigo 15_06_2016.mp4"
-##fourcc = cv2.VideoWriter_fourcc('F','M','P','4')
 if args.cut == "True" or args.cut == True:
     args.cut = True
 else:
@@ -62,8 +60,10 @@ text_to_put = {
     2: 'GAME',
     3: 'LOST BALL',
     4: 'SERVICE POSITION',
-    5: 'HIGH SPEED',
-    6: 'SLOW PLAYER'
+    5: 'HOG HIGH SPEED',
+    6: 'HOG SLOW PLAYER',
+    7: 'BGS HIGH SPEED',
+    8: 'BGS SLOW PLAYER'
 } # Dictionary for flags
 
 ## Start frame flag search parameters-------------------------------
@@ -120,6 +120,7 @@ nlevels = 16
 hog = cv2.HOGDescriptor(winSize,blockSize,blockStride,cellSize,nbins,derivAperture,winSigma,
                         histogramNormType,L2HysThreshold,gammaCorrection,nlevels)
 hog.setSVMDetector(cv2.HOGDescriptor_getDefaultPeopleDetector())
+hog_fgbg = cv2.createBackgroundSubtractorMOG2(history=50000, varThreshold=200)
 hog_to = 0
 hog_speed = 0
 hog_xp , hog_yp = 0, 0
@@ -127,14 +128,28 @@ hog_xpp , hog_ypp = 0, 0
 hog_no_player = 1
 hog_slow=0
 hog_sec = 10
-hog_flag = 0
+hog_start = 0
+hog_stop = 0
 ##------------------------------------------------------------------
 
+## BGS Speed parameters------------------------------------
+high_speed = 0
+speed_flag = 0
+slow = 0
+slow_count = 0
+fast_count = 0
+speed_position = [0, 0]
+no_player = 1
+speed_start = 0
+very_slow = 0
+slow_flag = 0
+##------------------------------------------------------------
+AAA = []
 ## Do the first iteration in order to obtain init_frame for end_frame search
 ret, frame = cap.read()
 ##loc_frame = cv2.resize(frame,None,fx=0.5, fy=0.5,
 ##                       interpolation = cv2.INTER_CUBIC)
-(xc,yc) = (320,200) #f_sp(loc_frame)
+(xc,yc) = (320,200) #f_sp(loc_frame)#
 ##cv2.imwrite('n2.jpg',loc_frame)
 ##print(xc,yc)
 
@@ -185,12 +200,12 @@ while(1):
     
 ########    HoG SPEED
     
-    hog_to, hog_speed, hog_xpp, hog_ypp, hog_xp, hog_yp, hog_slow, hog_no_player, hog_flag = hog_proc(hog_flag, hog, frame, hog_speed, \
+    hog_fgbg, hog_to, hog_speed, hog_xpp, hog_ypp, hog_xp, hog_yp, hog_slow, hog_no_player, hog_start, hog_stop = hog_proc(hog_fgbg, hog, frame, hog_speed, \
                                                                                           hog_to, hog_xpp, \
                                                                                           hog_ypp, hog_xp, \
                                                                                           hog_yp, hog_slow, \
                                                                                           hog_no_player, \
-                                                                                          hog_sec)
+                                                                                          hog_sec, fps)
 ########    SERVING POSITION
     
     morpho, fgbg, counter, neg_count, position, positionR, start_flag = firstf.find(args.outdoor, frame, fgbg,\
@@ -220,23 +235,53 @@ while(1):
                                              min_ball_area, max_ball_area, min_dif_border, \
                                              max_dif_border, greenLower, greenUpper, \
                                              canny_thr)  # find an end frame
-
+######## BGS PLAYER SPEED
+    if it > 10000000000000000*fps:
+        speed_start, slow, slow_count, fast_count, speed_position, no_player, very_slow = speed(speed_start, \
+                                                                                     morpho, slow, slow_count, \
+                                                                                     fast_count, speed_position, \
+                                                                                     no_player, very_slow)
+        if speed_start < 1:
+            high_speed +=1
+        else:
+            if high_speed > fps:
+                speed_flag = 1
+            else:
+                speed_flag = 0
+            high_speed = 0
+    if very_slow > 4*fps:
+        slow_flag = 1
+        very_slow = 0
+    else:
+        slow_flag = 0
+            
 ########    FLAG IDENTIFICATION
+    if start_flag > 0:
+        AAA.append(it)
     if curr == 0:
         if start_flag > 0:
             D.append(1)
             curr = 1
-        elif hog_flag > 0.5:
+            hog_slow, hog_no_player = 0, 1
+            very_slow = -5*fps
+        elif hog_start > 0.5:
             D.append(5)
             curr = 5
+            very_slow = -5*fps
         elif serv_flag > 0:
             D.append(4)
             curr = 4
+            hog_slow, hog_no_player = 0, 1
+            very_slow = -5*fps
+        elif speed_flag > 0:
+            D.append(7)
+            curr = 7
+            very_slow = -5*fps
         else:
             D.append(0)
             curr = 0
     else:
-        if curr == 1 or curr == 5:
+        if curr == 1 or curr == 5 or curr == 7:
            D.append(2)
            curr = 2
            end_counter = 0
@@ -248,8 +293,11 @@ while(1):
             if end_flag > 0:
                 D.append(3)
                 curr = 0
-            elif hog_flag < 0.5:
+            elif hog_stop > 0.5:
                 D.append(6)
+                curr = 0
+            elif slow_flag > 0:
+                D.append(8)
                 curr = 0
             else:
                 D.append(2)
@@ -273,11 +321,10 @@ for i in range(2*fps, len(D)-2*fps-1): # if it is a start, go back for 2 sec and
                 F[j] = 1
         else:
             for j in range(i-3*fps,i+np.uint8(fps/3)): # if it is a start 
-               if D[j] == 0 or D[j] == 5:
-                   F[j] = 1                # and less then a sec left - assign start from 0, not 25 frames back
+                F[j] = 1                # and less then a sec left - assign start from 0, not 25 frames back
     elif D[i] == 3: # if it is an end frame - let it stay for a sec
         for j in range(i, i+2*fps):
-            if D[j] == 0:
+            if D[j] == 2:
                 F[j] = 3
     elif D[i] == 4: 
         for j in range(i-2*fps, i):
@@ -288,8 +335,17 @@ for i in range(2*fps, len(D)-2*fps-1): # if it is a start, go back for 2 sec and
             if D[j] == 0:
                 F[j] = 5
     elif D[i] == 6: 
-        for j in range(i-8*fps, i-2*fps):
-            F[j] = 6
+        for j in range(i-8*fps, i):
+            if D[j] == 2:
+                F[j] = 6
+    elif D[i] == 7: 
+        for j in range(i-4*fps, i):
+            if D[j] == 0:
+                F[j] = 7
+    elif D[i] == 8: 
+        for j in range(i-fps, i):
+            if D[j] == 2:
+                F[j] = 8
 
 ####### Put texts on frames
 for i in range(len(F)-1):
@@ -297,7 +353,7 @@ for i in range(len(F)-1):
     if not(ret):
         break
     if args.cut:
-        if F[i] != 0 and F[i] != 6:
+        if F[i] != 0 and F[i] != 6 and F[i] != 3 and F[i] != 8:
             out.write(frame)
     else:
         text = text_to_put[F[i]]   
@@ -308,7 +364,6 @@ for i in range(len(F)-1):
         
 
 end = timer()
-print(len(D),it)
 print("\nProcessing completed successfully!")
 minutes = np.int(np.floor((end - start)/60))
 sec = np.int(np.round((end - start) - np.int(np.floor((end - start)/60)*60)))
