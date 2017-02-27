@@ -70,6 +70,7 @@ cv2.imwrite('/media/pc/ntfs/Untitled Folder/raw1.jpg',img1c)
 cv2.imwrite('/media/pc/ntfs/Untitled Folder/raw2.jpg',img2c)
 img1 = cv2.cvtColor(img1c, cv2.COLOR_BGR2GRAY)
 img2 = cv2.cvtColor(img2c, cv2.COLOR_BGR2GRAY)
+# Define a feature matching algorithm FLANN or bruteforce
 FLANN_INDEX_KDTREE = 0
 index_params = dict(algorithm = FLANN_INDEX_KDTREE, trees = 5)
 search_params = dict(checks=50)   # or pass empty dictionary
@@ -77,6 +78,7 @@ search_params = dict(checks=50)   # or pass empty dictionary
 bf = cv2.BFMatcher() #cv2.NORM_HAMMING, crossCheck=True)
 ##flann = cv2.FlannBasedMatcher(index_params,search_params)
 
+# ORB Features for image matching
 sift = cv2.ORB_create(nfeatures=1000, scaleFactor = 1.2, nlevels=8, WTA_K=4, patchSize=51)
 kp1, des1 = sift.detectAndCompute(img1,None)
 kp2, des2 = sift.detectAndCompute(img2,None)
@@ -97,6 +99,8 @@ img2d = cv2.drawKeypoints(img2c,kp2,img2,color=(0,255,0), flags=0)
 cv2.imshow('dis2', img2d)
 cv2.imwrite('/media/pc/ntfs/Untitled Folder/second.jpg',img2d)
 cv2.waitKey()
+
+# Match the features
 matches = bf.match(des1,des2)
 matches = sorted(matches, key = lambda x:x.distance)
 img3 = cv2.drawMatches(img1c,kp1,img2c,kp2,matches[:20],img1, matchColor= (0,255,255),flags=2)
@@ -104,9 +108,11 @@ cv2.imshow('match', img3)
 cv2.imwrite('/media/pc/ntfs/Untitled Folder/match.jpg',img3)
 cv2.waitKey()
 good = matches
+# Reshape feature arrays
 src_pts = np.float32([ kp1[m.queryIdx].pt for m in good ]).reshape(-1,1,2)
 dst_pts = np.float32([ kp2[m.trainIdx].pt for m in good ]).reshape(-1,1,2)
-        
+
+# Find the transformation        
 M, mask = cv2.findHomography(src_pts, dst_pts, cv2.RANSAC,50.0)
 dst = cv2.warpPerspective(img2c, np.linalg.inv(M), (img1.shape[1], img1.shape[0]))
 cv2.imshow("Images", dst)

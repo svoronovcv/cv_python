@@ -80,7 +80,7 @@ while(i < N+2): #len(X)):
     ret, img = cap.read()
     if not(ret):
         break
-    tow = imgform(img)
+    tow = imgform(img) # From a video
 ##    tow = unsharp(tow)
     xm,xp,ym,yp = ROIfind(X,Y,side)
     segm.segment(tow[ym:yp, xm:xp, :], side) #(tow[287:,:,:]) # segmentation

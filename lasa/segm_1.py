@@ -20,7 +20,7 @@ def segment(ROI,side):
     ##                                    maxLevel=1, \
     ##                                    termcrit=(
     ##                                        cv2.TERM_CRITERIA_EPS \
-    1                                        + cv2.TERM_CRITERIA_MAX_ITER, 5, 1))
+    ##                                        + cv2.TERM_CRITERIA_MAX_ITER, 5, 1))
     (seg_image, lab_image, num_regions) = pms.segment(shifted, \
                                                       spatial_radius=3,\
                                                       range_radius=3, \
